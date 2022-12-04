@@ -60,6 +60,8 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
         }
     }
 
+    private String prefix=null;
+
     public FTPClient getFtpClient() { return ftpClient; }
     public void setFtpClient(final FTPClient ftpClient) { this.ftpClient = ftpClient; }
 
@@ -104,6 +106,7 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
     }
 
     private void delete(final FTPFile ftpFile) throws IOException {
+        if(null==prefix)return;
         if (ftpFile == null)
             throw new BapPublisherException(Messages.exception_client_fileIsNull());
         final String entryName = ftpFile.getName();
@@ -118,8 +121,14 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
             if (!ftpClient.removeDirectory(entryName))
                 throw new BapPublisherException(Messages.exception_client_rmdir(entryName));
         } else {
-            if (!ftpClient.deleteFile(entryName))
-                throw new BapPublisherException(Messages.exception_client_dele(entryName));
+            String thisPrefix=null;
+            String[] names=entryName.split("-V");
+            if(names.length>0)
+                thisPrefix=names[0];
+
+            if (thisPrefix.equals(prefix))
+                if (!ftpClient.deleteFile(entryName))
+                    throw new BapPublisherException(Messages.exception_client_dele(entryName));
         }
     }
 
@@ -135,6 +144,13 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
     }
 
     public void transferFile(final BapFtpTransfer client, final FilePath filePath, final InputStream content) throws IOException {
+
+        String[] names=filePath.getName().split("-V");
+        if(names.length>0)
+            prefix=names[0];
+
+        deleteTree();
+
         if (!ftpClient.storeFile(filePath.getName(), content))
             throw new BapPublisherException(Messages.exception_failedToStoreFile(ftpClient.getReplyString()));
     }
