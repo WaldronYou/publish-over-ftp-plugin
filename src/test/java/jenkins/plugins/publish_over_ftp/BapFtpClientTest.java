@@ -445,6 +445,29 @@ public class BapFtpClientTest {
         mockControl.verify();
     }
 
+    @Test public void testDeleteTreeDeletesDirectoryWithFiles2() throws Exception {
+        mockFTPClient.setListHiddenFiles(true);
+        final FTPListParseEngine mockListEngine = mockControl.createMock(FTPListParseEngine.class);
+        expect(mockFTPClient.hasFeature("MLST")).andReturn(false);
+        expect(mockFTPClient.initiateListParsing()).andReturn(mockListEngine);
+        final String dirname = "directory";
+        expectDirectory(mockListEngine, dirname);
+        expect(mockFTPClient.changeWorkingDirectory(dirname)).andReturn(true);
+
+        final FTPListParseEngine mockListEngineSubDir = mockControl.createMock(FTPListParseEngine.class);
+        expect(mockFTPClient.hasFeature("MLST")).andReturn(false);
+        expect(mockFTPClient.initiateListParsing()).andReturn(mockListEngineSubDir);
+        expectDeleteFiles(mockListEngineSubDir, "rbis-ui-war-V1.2.3", "rbis-ui-V1.2.3", "anotherOne");
+        expect(mockListEngineSubDir.hasNext()).andReturn(false);
+
+        expect(mockFTPClient.changeToParentDirectory()).andReturn(true);
+        expect(mockFTPClient.removeDirectory(dirname)).andReturn(true);
+        expect(mockListEngine.hasNext()).andReturn(false);
+        mockControl.replay();
+        bapFtpClient.deleteTree("rbis-ui-V(\\S*)");
+        mockControl.verify();
+    }
+
     private void expectDeleteFiles(final FTPListParseEngine mockListEngine, final String... filenames) throws Exception {
         for (final String filename : filenames) {
             expectFile(mockListEngine, filename);

@@ -36,6 +36,8 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPListParseEngine;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
 
@@ -84,26 +86,36 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
     }
 
     public void deleteTree() throws IOException {
-        ftpClient.setListHiddenFiles(true);
-        delete();
+        deleteTree(null);
     }
 
-    private void delete() throws IOException {
+    public void deleteTree(String cleanRemoteRegular) throws IOException {
+        ftpClient.setListHiddenFiles(true);
+        delete(cleanRemoteRegular);
+
+        if(buildInfo != null)
+        if(cleanRemoteRegular == null)
+            buildInfo.println("≤‚ ‘£∫cleanRemoteRegular Œ™ null.");
+        else
+            buildInfo.println("≤‚ ‘£∫"+cleanRemoteRegular);
+    }
+
+    private void delete(String cleanRemoteRegular) throws IOException {
         // use the extension if available
         if(ftpClient.hasFeature("MLST")) {
             for(FTPFile file : ftpClient.mlistDir()) {
-                delete(file);
+                delete(file, cleanRemoteRegular);
             }
         } else {
             final FTPListParseEngine listParser = ftpClient.initiateListParsing();
             if (listParser == null)
                 throw new BapPublisherException(Messages.exception_client_listParserNull());
             while (listParser.hasNext())
-                delete(listParser.getNext(1)[0]);
+                delete(listParser.getNext(1)[0], cleanRemoteRegular);
         }
     }
 
-    private void delete(final FTPFile ftpFile) throws IOException {
+    private void delete(final FTPFile ftpFile,final String cleanRemoteRegular) throws IOException {
         if (ftpFile == null)
             throw new BapPublisherException(Messages.exception_client_fileIsNull());
         final String entryName = ftpFile.getName();
@@ -112,12 +124,21 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
         if (ftpFile.isDirectory()) {
             if (!changeDirectory(entryName))
                 throw new BapPublisherException(Messages.exception_cwdException(entryName));
-            delete();
+            delete(cleanRemoteRegular);
             if (!ftpClient.changeToParentDirectory())
                 throw new BapPublisherException(Messages.exception_client_cdup());
             if (!ftpClient.removeDirectory(entryName))
                 throw new BapPublisherException(Messages.exception_client_rmdir(entryName));
         } else {
+
+            if(cleanRemoteRegular != null && "".equals(cleanRemoteRegular)){
+                Pattern pattern= Pattern.compile(cleanRemoteRegular);
+                Matcher matcher = pattern.matcher(entryName);
+
+                if(!matcher.matches())
+                    return;
+            }
+
             if (!ftpClient.deleteFile(entryName))
                 throw new BapPublisherException(Messages.exception_client_dele(entryName));
         }
