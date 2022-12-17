@@ -1,1 +1,6 @@
+将maven添加到环境变量中，
+在当前目录打开cmd窗口，执行如下命令。
+
 mvn clean package -Denforcer.skip=true -Dmaven.test.skip=true
+
+将生成的 publish-over-ftp.jar 替换到 Jenkins的Plugins目录，重启Jenkins。

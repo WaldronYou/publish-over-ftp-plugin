@@ -149,7 +149,8 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
         if(names.length>0)
             prefix=names[0];
 
-        deleteTree();
+        if(client.isCleanRemote())
+            deleteTree();
 
         if (!ftpClient.storeFile(filePath.getName(), content))
             throw new BapPublisherException(Messages.exception_failedToStoreFile(ftpClient.getReplyString()));
