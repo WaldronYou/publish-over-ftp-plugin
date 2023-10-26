@@ -25,6 +25,7 @@
 package jenkins.plugins.publish_over_ftp;
 
 import hudson.FilePath;
+import jenkins.plugins.publish_over.BPBuildEnv;
 import jenkins.plugins.publish_over.BPBuildInfo;
 import jenkins.plugins.publish_over.BPDefaultClient;
 import jenkins.plugins.publish_over.BapPublisherException;
@@ -36,6 +37,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPListParseEngine;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.TreeMap;
 
 public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
 
@@ -118,7 +120,12 @@ public class BapFtpClient extends BPDefaultClient<BapFtpTransfer> {
             if (!ftpClient.removeDirectory(entryName))
                 throw new BapPublisherException(Messages.exception_client_rmdir(entryName));
         } else {
-            if (!ftpClient.deleteFile(entryName))
+            TreeMap<String, String> map = buildInfo.getCurrentBuildEnv().getEnvVars();
+            String jobName = map.get(BPBuildEnv.ENV_JOB_NAME);
+
+            jobName = jobName.replace("/", "-");
+
+            if (entryName.contains(jobName) && !ftpClient.deleteFile(entryName))
                 throw new BapPublisherException(Messages.exception_client_dele(entryName));
         }
     }
